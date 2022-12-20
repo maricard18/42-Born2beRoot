@@ -2,38 +2,38 @@
 
 arch=$(uname -a)
 
-fcpu=$(getconf _NPROCESSORS_ONLN)
-vcpu=$(getconf _NPROCESSORS_ONLN)
+fcpu=$(nproc)
+vcpu=$(cat /proc/cpuinfo | grep processor | wc -l)
 
-rammemory=$(free -m | grep Mem | awk '{printf("%d/%d (%.2f%%)") , $3, $2, $3/$2*100]')
-diskmemory=$( )
-cpuload=$( )
+rammemory=$(free -m | grep Mem | awk '{printf("%d/%dMB (%.2f%%)"), $3, $2, $3/$2*100}')
+
+diskmemory=$(df -Bg --total | grep total | awk '{printf("%d/%dGb (%.2f%%)"), $3, $2, $3/$2*100}')
+
+cpuload=$(top -bn1 | grep "^%Cpu" | awk '{printf ("%.1f%%"), $2}')
 
 lastboot=$(who -b | awk '{print $3 " " $4}')
 
-lvm=$(lsblk | grep "lvm" | wc - l)
-checklvm=$(if [ $lvm -eq 0 ]; then echo no; else echo yes; fi)
+lvm=$(lsblk | grep lvm | wc -l)
+checklvm=$(if [ $lvm == 0 ]; then echo no; else echo yes; fi)
 
-tcp=$(ss -t | grep ESTAB | wc - l)
-checktcp=$(if [ $tcp -eq 0]; then echo NOT ESTABLISHED; else echo ESTABLISHED; fi)
+tcp=$(ss -t | grep ESTAB | wc -l)
 
 users=$(who | wc -l)
 
-ipv4=$(ifconfig | grep broadcast | awk '{print $2}') 
-mac=$(ifconfig | grep ether | awk '{print $2}')
+ipv4=$(ip r | grep src | awk '{print $9}')
+mac=$(ip link | grep link/ether | awk '{print $2}')
 
 sudo=$(journalctl _COMM=sudo | grep COMMAND | wc -l)
 
 wall "	#Architecture: $arch
-		#CPU physical : $fcpu 
-		#vCPU: $vcpu
-		#Memory Usage: $rammemory
-		#Disk Usage: NO
-		#CPU load: NO
-		#Last boot: $lastboot
-		#LVM use: $checklvm
-		#Connections TCP : $tcp $checktcp
-		#User log: $user
-		#Network: IP $ipv4 ($mac)
-		#Sudo : $sudo cmd
-	 "
+	#CPU physical : $fcpu
+	#vCPU : $vcpu
+	#Memory Usage: $rammemory
+	#Disk Usage: $diskmemory
+	#CPU load: $cpuload
+	#Last boot: $lastboot
+	#LVM use: $checklvm
+	#Connections TCP : $tcp ESTABLISHED
+	#User log: $users
+	#Network: IP $ipv4 ($mac)
+	#Sudo : $sudo cmd"
